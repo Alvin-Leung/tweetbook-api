@@ -1,11 +1,8 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
+using Tweetbook.Installers;
 using Tweetbook.Options;
 
 namespace Tweetbook
@@ -22,36 +19,7 @@ namespace Tweetbook
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<Data.DataContext>(options =>
-                options.UseSqlServer(
-                    Configuration.GetConnectionString("DefaultConnection")));
-            services.AddDefaultIdentity<IdentityUser>()
-                .AddEntityFrameworkStores<Data.DataContext>();
-
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
-
-            // Register the Swagger Generator as a service. We can define 1 or more Swagger documents here
-            services.AddSwaggerGen(x =>
-            {
-                x.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info
-                { 
-                    Title = "Tweetbook API",
-                    Version = "v1",
-                    Description = "Test documentation for the Tweetbook API",
-                    TermsOfService = "https://example.com/terms",
-                    Contact = new Swashbuckle.AspNetCore.Swagger.Contact
-                    {
-                        Name = "Alvin Leung",
-                        Email = string.Empty,
-                        Url = "https://gooddevbaddev.com",
-                    },
-                    License = new Swashbuckle.AspNetCore.Swagger.License
-                    {
-                        Name = "Use under LICX",
-                        Url = "https://example.com/license",
-                    }
-                });
-            });
+            services.InstallServicesInAssembly(this.Configuration);
         }
 
         // Middleware should be enabled here
