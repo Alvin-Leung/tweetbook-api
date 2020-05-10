@@ -10,5 +10,7 @@ namespace Tweetbook.Services
         T Get(Guid Id);
 
         void Add(T item);
+
+        bool Update(T item);
     }
 }

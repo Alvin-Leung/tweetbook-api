@@ -37,5 +37,18 @@ namespace Tweetbook.Services
         {
             this.posts.Add(post);
         }
+
+        public bool Update(Post updatedPost)
+        {
+            var foundPost = this.posts.Find(post => post.Id == updatedPost.Id);
+
+            if (foundPost == default)
+            {
+                return false;
+            }
+
+            foundPost.Name = updatedPost.Name;
+            return true;
+        }
     }
 }

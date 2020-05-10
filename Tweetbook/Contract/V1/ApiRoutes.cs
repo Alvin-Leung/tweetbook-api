@@ -14,6 +14,8 @@
 
             public const string Get = Base + "/posts/{postId}";
 
+            public const string Update = Base + "/posts/{postId}";
+
             public const string Create = Base + "/posts"; // note the standard for creation is to name the Create endpoint the same as the GetAll endpoint
         }
     }

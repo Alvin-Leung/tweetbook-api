@@ -36,6 +36,29 @@ namespace Tweetbook.Controllers.V1
             return Ok(foundPost);
         }
 
+        [HttpPut(ApiRoutes.Posts.Update)]
+        public IActionResult Update([FromRoute]Guid postId, [FromBody]UpdatePostRequest postRequest)
+        {
+            var post = new Post
+            {
+                Id = postId,
+                Name = postRequest.Name
+            };
+
+            if (!this.postService.Update(post))
+            {
+                return NotFound();
+            }
+
+            var postResponse = new PostResponse
+            {
+                Id = post.Id,
+                Name = post.Name
+            };
+
+            return Ok(postResponse);
+        }
+
         [HttpPost(ApiRoutes.Posts.Create)]
         public IActionResult Create([FromBody] CreatePostRequest postRequest) // The FromBody attribute gives the framework a clue as to where the posted data is (from the body in this case)
         {
