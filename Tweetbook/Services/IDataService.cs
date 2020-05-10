@@ -7,10 +7,12 @@ namespace Tweetbook.Services
     {
         IEnumerable<T> GetAll();
 
-        T Get(Guid Id);
+        T GetById(Guid Id);
 
         void Add(T item);
 
         bool Update(T item);
+
+        bool Delete(Guid Id);
     }
 }

@@ -26,7 +26,7 @@ namespace Tweetbook.Controllers.V1
         [HttpGet(ApiRoutes.Posts.Get)]
         public IActionResult Get([FromRoute]Guid postId)
         {
-            var foundPost = this.postService.Get(postId);
+            var foundPost = this.postService.GetById(postId);
             
             if (foundPost == null)
             {
@@ -60,7 +60,7 @@ namespace Tweetbook.Controllers.V1
         }
 
         [HttpPost(ApiRoutes.Posts.Create)]
-        public IActionResult Create([FromBody] CreatePostRequest postRequest) // The FromBody attribute gives the framework a clue as to where the posted data is (from the body in this case)
+        public IActionResult Create([FromBody]CreatePostRequest postRequest) // The FromBody attribute gives the framework a clue as to where the posted data is (from the body in this case)
         {
             if (postRequest.Id == Guid.Empty)
             {
@@ -90,6 +90,17 @@ namespace Tweetbook.Controllers.V1
             };
 
             return Created(locationUri, response);
+        }
+
+        [HttpDelete(ApiRoutes.Posts.Delete)]
+        public IActionResult Delete([FromRoute]Guid postId)
+        {
+            if (!this.postService.Delete(postId))
+            {
+                return NotFound();
+            }
+
+            return NoContent();
         }
     }
 }

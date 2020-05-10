@@ -28,7 +28,7 @@ namespace Tweetbook.Services
             return this.posts;
         }
 
-        public Post Get(Guid Id)
+        public Post GetById(Guid Id)
         {
             return this.posts.SingleOrDefault(post => post.Id == Id);
         }
@@ -40,14 +40,28 @@ namespace Tweetbook.Services
 
         public bool Update(Post updatedPost)
         {
-            var foundPost = this.posts.Find(post => post.Id == updatedPost.Id);
+            var postToOverwrite = this.GetById(updatedPost.Id);
 
-            if (foundPost == default)
+            if (postToOverwrite == null)
             {
                 return false;
             }
 
-            foundPost.Name = updatedPost.Name;
+            var index = this.posts.IndexOf(postToOverwrite);
+            this.posts[index] = updatedPost;
+            return true;
+        }
+
+        public bool Delete(Guid postId)
+        {
+            var postToDelete = this.GetById(postId);
+
+            if (postToDelete == default)
+            {
+                return false;
+            }
+
+            this.posts.Remove(postToDelete);
             return true;
         }
     }
