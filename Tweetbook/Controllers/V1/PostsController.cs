@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Threading.Tasks;
 using Tweetbook.Contract.V1;
 using Tweetbook.Controllers.V1.Requests;
 using Tweetbook.Controllers.V1.Responses;
@@ -18,15 +19,15 @@ namespace Tweetbook.Controllers.V1
         }
 
         [HttpGet(ApiRoutes.Posts.GetAll)]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            return Ok(this.postService.GetAll());
+            return Ok(await this.postService.GetAllAsync());
         }
 
         [HttpGet(ApiRoutes.Posts.Get)]
-        public IActionResult Get([FromRoute]Guid postId)
+        public async Task<IActionResult> Get([FromRoute]Guid postId)
         {
-            var foundPost = this.postService.GetById(postId);
+            var foundPost = await this.postService.GetByIdAsync(postId);
             
             if (foundPost == null)
             {
@@ -37,7 +38,7 @@ namespace Tweetbook.Controllers.V1
         }
 
         [HttpPut(ApiRoutes.Posts.Update)]
-        public IActionResult Update([FromRoute]Guid postId, [FromBody]UpdatePostRequest postRequest)
+        public async Task<IActionResult> Update([FromRoute]Guid postId, [FromBody]UpdatePostRequest postRequest)
         {
             var post = new Post
             {
@@ -45,7 +46,7 @@ namespace Tweetbook.Controllers.V1
                 Name = postRequest.Name
             };
 
-            if (!this.postService.Update(post))
+            if (!await this.postService.UpdateAsync(post))
             {
                 return NotFound();
             }
@@ -60,26 +61,20 @@ namespace Tweetbook.Controllers.V1
         }
 
         [HttpPost(ApiRoutes.Posts.Create)]
-        public IActionResult Create([FromBody]CreatePostRequest postRequest) // The FromBody attribute gives the framework a clue as to where the posted data is (from the body in this case)
+        public async Task<IActionResult> Create([FromBody]CreatePostRequest postRequest) // The FromBody attribute gives the framework a clue as to where the posted data is (from the body in this case)
         {
-            if (postRequest.Id == Guid.Empty)
-            {
-                postRequest.Id = Guid.NewGuid();
-            }
-
             // Make sure to map the request to your domain object! This is why we created an additional CreatePostRequest class
             // What we expose to the client is a (versioned) contract/interface. Never mix up your contracts with domain objects,
             // as you may want to change the contract, but keep the domain objects the same in the future.
             var post = new Post
             {
-                Id = postRequest.Id,
                 Name = postRequest.Name
             };
 
-            this.postService.Add(post);
+            await this.postService.CreateAsync(post);
 
             var baseUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host.ToUriComponent()}";
-            var locationUri = $"{baseUrl}/{ApiRoutes.Posts.Get.Replace("{postId}", postRequest.Id.ToString())}";
+            var locationUri = $"{baseUrl}/{ApiRoutes.Posts.Get.Replace("{postId}", post.Id.ToString())}";
 
             // As with the request object, also make sure to use a versioned contract class for the response.
             // Both request and response look the same right now, but this could easily change in the future!
@@ -93,9 +88,9 @@ namespace Tweetbook.Controllers.V1
         }
 
         [HttpDelete(ApiRoutes.Posts.Delete)]
-        public IActionResult Delete([FromRoute]Guid postId)
+        public async Task<IActionResult> Delete([FromRoute]Guid postId)
         {
-            if (!this.postService.Delete(postId))
+            if (!await this.postService.DeleteAsync(postId))
             {
                 return NotFound();
             }

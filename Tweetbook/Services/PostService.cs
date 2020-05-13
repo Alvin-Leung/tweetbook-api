@@ -1,68 +1,60 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
+using Tweetbook.Data;
 using Tweetbook.Domain;
 
 namespace Tweetbook.Services
 {
     public class PostService : IDataService<Post>
     {
-        private List<Post> posts;
+        private readonly DataContext dataContext;
 
-        public PostService()
+        public PostService(DataContext dataContext)
         {
-            this.posts = new List<Post>();
-
-            for (var i = 0; i < 5; i++)
-            {
-                this.posts.Add(new Post
-                {
-                    Id = Guid.NewGuid(),
-                    Name = $"Post Name {i}"
-                });
-            }
+            this.dataContext = dataContext;
         }
 
-        public IEnumerable<Post> GetAll()
+        public async Task<IEnumerable<Post>> GetAllAsync()
         {
-            return this.posts;
+            return await this.dataContext.Posts.ToListAsync();
         }
 
-        public Post GetById(Guid Id)
+        public async Task<Post> GetByIdAsync(Guid Id)
         {
-            return this.posts.SingleOrDefault(post => post.Id == Id);
+            return await this.dataContext.Posts.SingleOrDefaultAsync(post => post.Id == Id);
         }
 
-        public void Add(Post post)
+        public async Task<bool> CreateAsync(Post post)
         {
-            this.posts.Add(post);
+            this.dataContext.Posts.Add(post);
+            var numCreated = await this.dataContext.SaveChangesAsync();
+
+            return numCreated > 0;
         }
 
-        public bool Update(Post updatedPost)
+        public async Task<bool> UpdateAsync(Post updatedPost)
         {
-            var postToOverwrite = this.GetById(updatedPost.Id);
+            this.dataContext.Posts.Update(updatedPost);
+            var numUpdated = await this.dataContext.SaveChangesAsync();
 
-            if (postToOverwrite == null)
-            {
-                return false;
-            }
-
-            var index = this.posts.IndexOf(postToOverwrite);
-            this.posts[index] = updatedPost;
-            return true;
+            return numUpdated > 0;
         }
 
-        public bool Delete(Guid postId)
+        public async Task<bool> DeleteAsync(Guid postId)
         {
-            var postToDelete = this.GetById(postId);
+            var postToDelete = await this.GetByIdAsync(postId);
 
             if (postToDelete == default)
             {
                 return false;
             }
 
-            this.posts.Remove(postToDelete);
-            return true;
+            this.dataContext.Posts.Remove(postToDelete);
+            var numDeleted = await this.dataContext.SaveChangesAsync();
+
+            return numDeleted > 0;
         }
     }
 }

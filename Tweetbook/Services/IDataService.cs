@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Tweetbook.Services
 {
     public interface IDataService<T>
     {
-        IEnumerable<T> GetAll();
+        Task<IEnumerable<T>> GetAllAsync();
 
-        T GetById(Guid Id);
+        Task<T> GetByIdAsync(Guid Id);
 
-        void Add(T item);
+        Task<bool> CreateAsync(T item);
 
-        bool Update(T item);
+        Task<bool> UpdateAsync(T item);
 
-        bool Delete(Guid Id);
+        Task<bool> DeleteAsync(Guid Id);
     }
 }
