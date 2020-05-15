@@ -36,6 +36,7 @@ namespace Tweetbook
 
             this.ConfigureSwagger(app);
 
+            app.UseAuthentication();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
 
