@@ -35,16 +35,22 @@ namespace Tweetbook.Services
             {
                 UserName = email,
                 Email = email
-                // no need to calculate and populate the PasswordHash property ourselves. UserManager will do automatically with CreateAsync method below.
+                // no need to calculate and populate the PasswordHash property ourselves. UserManager.CreateAsync will do this automatically.
             };
 
             var result = await userManager.CreateAsync(newUser, password);
 
-            if (!result.Succeeded)
+            return new AuthenticationResult
             {
-                return new AuthenticationResult { Success = false, Errors = result.Errors.Select(x => x.Description) };
-            }
+                Success = result.Succeeded,
+                Token = result.Succeeded ? this.CreateToken(newUser) : null,
+                Errors = result.Succeeded ? null : result.Errors.Select(x => x.Description)
+            };
+        }
 
+        private string CreateToken(IdentityUser newUser)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(this.jwtSettings.Secret);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -58,9 +64,9 @@ namespace Tweetbook.Services
                 Expires = DateTime.UtcNow.AddHours(2),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
-            var tokenHandler = new JwtSecurityTokenHandler();
+            
             var token = tokenHandler.CreateToken(tokenDescriptor);
-            return new AuthenticationResult { Success = true, Token = tokenHandler.WriteToken(token) };
+            return tokenHandler.WriteToken(token);
         }
     }
 }
