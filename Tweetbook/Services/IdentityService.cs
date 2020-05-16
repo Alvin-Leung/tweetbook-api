@@ -1,0 +1,66 @@
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
+using System.Threading.Tasks;
+using Tweetbook.Domain;
+using Tweetbook.Options;
+
+namespace Tweetbook.Services
+{
+    public class IdentityService : IIdentityService
+    {
+        private readonly UserManager<IdentityUser> userManager;
+        private readonly JwtSettings jwtSettings;
+
+        public IdentityService(UserManager<IdentityUser> userManager, JwtSettings jwtSettings)
+        {
+            this.userManager = userManager;
+            this.jwtSettings = jwtSettings;
+        }
+
+        public async Task<AuthenticationResult> RegisterAsync(string email, string password)
+        {
+            var existingUser = await userManager.FindByEmailAsync(email);
+
+            if (existingUser != null)
+            {
+                return new AuthenticationResult { Success = false, Errors = new string[] { $"User with email {email} already exists." } };
+            }
+
+            var newUser = new IdentityUser()
+            {
+                UserName = email,
+                Email = email
+                // no need to calculate and populate the PasswordHash property ourselves. UserManager will do automatically with CreateAsync method below.
+            };
+
+            var result = await userManager.CreateAsync(newUser, password);
+
+            if (!result.Succeeded)
+            {
+                return new AuthenticationResult { Success = false, Errors = result.Errors.Select(x => x.Description) };
+            }
+
+            var key = Encoding.ASCII.GetBytes(this.jwtSettings.Secret);
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(JwtRegisteredClaimNames.Sub, newUser.Email),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                    new Claim(JwtRegisteredClaimNames.Email, newUser.Email),
+                    new Claim("id", newUser.Id)
+                }),
+                Expires = DateTime.UtcNow.AddHours(2),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return new AuthenticationResult { Success = true, Token = tokenHandler.WriteToken(token) };
+        }
+    }
+}
