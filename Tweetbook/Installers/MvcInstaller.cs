@@ -7,6 +7,7 @@ using Swashbuckle.AspNetCore.Swagger;
 using System.Collections.Generic;
 using System.Text;
 using Tweetbook.Options;
+using Tweetbook.Services;
 
 namespace Tweetbook.Installers
 {
@@ -14,22 +15,29 @@ namespace Tweetbook.Installers
     {
         public void InstallServices(IServiceCollection services, IConfiguration configuration)
         {
-            var jwtSettings = new JwtSettings();
-            configuration.GetSection(nameof(JwtSettings)).Bind(jwtSettings);
-            services.AddSingleton(jwtSettings);
-
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
 
-            services.AddAuthentication(x =>
+            this.InstallAuthentication(services, configuration);
+            this.InstallSwagger(services);
+        }
+
+        private void InstallAuthentication(IServiceCollection services, IConfiguration configuration)
+        {
+            var jwtSettings = new JwtSettings();
+
+            configuration.GetSection(nameof(JwtSettings)).Bind(jwtSettings);
+            services.AddSingleton(jwtSettings);
+            services.AddScoped<IIdentityService, IdentityService>();
+            services.AddAuthentication(authOptions =>
             {
-                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                authOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                authOptions.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                authOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddJwtBearer(x =>
+            .AddJwtBearer(jwtBearerOptions =>
             {
-                x.SaveToken = true;
-                x.TokenValidationParameters = new TokenValidationParameters
+                jwtBearerOptions.SaveToken = true;
+                jwtBearerOptions.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSettings.Secret)),
@@ -39,7 +47,10 @@ namespace Tweetbook.Installers
                     ValidateLifetime = true
                 };
             });
+        }
 
+        private void InstallSwagger(IServiceCollection services)
+        {
             // Register the Swagger Generator as a service. We can define 1 or more Swagger documents here
             services.AddSwaggerGen(x =>
             {
