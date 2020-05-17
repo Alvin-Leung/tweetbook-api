@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 using System.Threading.Tasks;
 using Tweetbook.Contract.V1;
 using Tweetbook.Controllers.V1.Requests;
@@ -17,8 +18,16 @@ namespace Tweetbook.Controllers.V1
         }
 
         [HttpPost(ApiRoutes.Identity.Register)]
-        public async Task<IActionResult> Register([FromBody]UserRegistrationRequest userRegistrationRequest)
+        public async Task<IActionResult> Register([FromBody] UserRegistrationRequest userRegistrationRequest)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new AuthFailResponse
+                {
+                    Errors = this.ModelState.Values.SelectMany(state => state.Errors.Select(error => error.ErrorMessage))
+                });
+            }
+
             var authenticationResult = await this.identityService.RegisterAsync(userRegistrationRequest.Email, userRegistrationRequest.Password);
 
             if (!authenticationResult.Success)
@@ -33,8 +42,16 @@ namespace Tweetbook.Controllers.V1
         }
 
         [HttpPost(ApiRoutes.Identity.Login)]
-        public async Task<IActionResult> Login([FromBody]UserLoginRequest userRegistrationRequest)
+        public async Task<IActionResult> Login([FromBody] UserLoginRequest userRegistrationRequest)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new LoginFailResponse
+                {
+                    Errors = this.ModelState.Values.SelectMany(state => state.Errors.Select(error => error.ErrorMessage))
+                });
+            }
+
             var loginResult = await this.identityService.LoginAsync(userRegistrationRequest.Email, userRegistrationRequest.Password);
 
             if (!loginResult.Success)
