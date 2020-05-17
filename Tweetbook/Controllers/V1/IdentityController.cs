@@ -31,5 +31,21 @@ namespace Tweetbook.Controllers.V1
 
             return Ok(new AuthSuccessResponse { Token = authenticationResult.Token });
         }
+
+        [HttpPost(ApiRoutes.Identity.Login)]
+        public async Task<IActionResult> Login([FromBody]UserLoginRequest userRegistrationRequest)
+        {
+            var loginResult = await this.identityService.LoginAsync(userRegistrationRequest.Email, userRegistrationRequest.Password);
+
+            if (!loginResult.Success)
+            {
+                return BadRequest(new LoginFailResponse
+                {
+                    Errors = loginResult.Errors
+                });
+            }
+
+            return Ok(new LoginSuccessResponse { Token = loginResult.Token });
+        }
     }
 }

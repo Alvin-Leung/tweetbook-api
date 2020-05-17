@@ -28,7 +28,7 @@ namespace Tweetbook.Services
 
             if (existingUser != null)
             {
-                return new AuthenticationResult { Success = false, Errors = new string[] { $"User with email {email} already exists." } };
+                return new AuthenticationResult { Success = false, Errors = new[] { $"User with email {email} already exists." } };
             }
 
             var newUser = new IdentityUser()
@@ -45,6 +45,24 @@ namespace Tweetbook.Services
                 Success = result.Succeeded,
                 Token = result.Succeeded ? this.CreateToken(newUser) : null,
                 Errors = result.Succeeded ? null : result.Errors.Select(x => x.Description)
+            };
+        }
+
+        public async Task<LoginResult> LoginAsync(string email, string password)
+        {
+            var user = await userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                return new LoginResult { Success = false, Errors = new[] { $"User with email {email} does not exist." } };
+            }
+
+            var result = await userManager.CheckPasswordAsync(user, password);
+
+            return new LoginResult
+            {
+                Success = result,
+                Token = result ? this.CreateToken(user) : null
             };
         }
 
