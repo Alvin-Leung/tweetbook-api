@@ -52,17 +52,17 @@ namespace Tweetbook.Controllers.V1
                 });
             }
 
-            var loginResult = await this.identityService.LoginAsync(userRegistrationRequest.Email, userRegistrationRequest.Password);
+            var authenticationResult = await this.identityService.LoginAsync(userRegistrationRequest.Email, userRegistrationRequest.Password);
 
-            if (!loginResult.Success)
+            if (!authenticationResult.Success)
             {
                 return BadRequest(new LoginFailResponse
                 {
-                    Errors = loginResult.Errors
+                    Errors = authenticationResult.Errors
                 });
             }
 
-            return Ok(new LoginSuccessResponse { Token = loginResult.Token });
+            return Ok(new LoginSuccessResponse { Token = authenticationResult.Token });
         }
     }
 }

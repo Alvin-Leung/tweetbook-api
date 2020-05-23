@@ -48,18 +48,18 @@ namespace Tweetbook.Services
             };
         }
 
-        public async Task<LoginResult> LoginAsync(string email, string password)
+        public async Task<AuthenticationResult> LoginAsync(string email, string password)
         {
             var user = await userManager.FindByEmailAsync(email);
 
             if (user == null)
             {
-                return new LoginResult { Success = false, Errors = new[] { $"User with email {email} does not exist." } };
+                return new AuthenticationResult { Success = false, Errors = new[] { $"User with email {email} does not exist." } };
             }
 
             var result = await userManager.CheckPasswordAsync(user, password);
 
-            return new LoginResult
+            return new AuthenticationResult
             {
                 Success = result,
                 Token = result ? this.CreateToken(user) : null
