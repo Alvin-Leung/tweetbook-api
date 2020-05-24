@@ -24,10 +24,14 @@ namespace Tweetbook.Installers
         private void InstallAuthentication(IServiceCollection services, IConfiguration configuration)
         {
             var jwtSettings = new JwtSettings();
-
             configuration.GetSection(nameof(JwtSettings)).Bind(jwtSettings);
+
+            var tokenValidationParameters = this.GetTokenValidationParameters(jwtSettings);
+
             services.AddSingleton(jwtSettings);
+            services.AddSingleton(tokenValidationParameters);
             services.AddScoped<IIdentityService, IdentityService>();
+
             services.AddAuthentication(authOptions =>
             {
                 authOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -37,16 +41,21 @@ namespace Tweetbook.Installers
             .AddJwtBearer(jwtBearerOptions =>
             {
                 jwtBearerOptions.SaveToken = true;
-                jwtBearerOptions.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSettings.Secret)),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    RequireExpirationTime = false,
-                    ValidateLifetime = true
-                };
+                jwtBearerOptions.TokenValidationParameters = tokenValidationParameters;
             });
+        }
+
+        private TokenValidationParameters GetTokenValidationParameters(JwtSettings jwtSettings)
+        {
+            return new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSettings.Secret)),
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                RequireExpirationTime = false,
+                ValidateLifetime = true
+            };
         }
 
         private void InstallSwagger(IServiceCollection services)

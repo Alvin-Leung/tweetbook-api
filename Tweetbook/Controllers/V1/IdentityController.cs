@@ -38,7 +38,23 @@ namespace Tweetbook.Controllers.V1
                 });
             }
 
-            return Ok(new AuthSuccessResponse { Token = authenticationResult.Token });
+            return Ok(new AuthSuccessResponse { Token = authenticationResult.Token, RefreshToken = authenticationResult.RefreshToken });
+        }
+
+        [HttpPost(ApiRoutes.Identity.Refresh)]
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenRequest refreshTokenRequest)
+        {
+            var authenticationResult = await this.identityService.RefreshTokenAsync(refreshTokenRequest.Token, refreshTokenRequest.RefreshToken);
+
+            if (!authenticationResult.Success)
+            {
+                return BadRequest(new AuthFailResponse
+                {
+                    Errors = authenticationResult.Errors
+                });
+            }
+
+            return Ok(new AuthSuccessResponse { Token = authenticationResult.Token, RefreshToken = authenticationResult.RefreshToken });
         }
 
         [HttpPost(ApiRoutes.Identity.Login)]
@@ -46,7 +62,7 @@ namespace Tweetbook.Controllers.V1
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(new LoginFailResponse
+                return BadRequest(new AuthFailResponse
                 {
                     Errors = this.ModelState.Values.SelectMany(state => state.Errors.Select(error => error.ErrorMessage))
                 });
@@ -56,13 +72,13 @@ namespace Tweetbook.Controllers.V1
 
             if (!authenticationResult.Success)
             {
-                return BadRequest(new LoginFailResponse
+                return BadRequest(new AuthFailResponse
                 {
                     Errors = authenticationResult.Errors
                 });
             }
 
-            return Ok(new LoginSuccessResponse { Token = authenticationResult.Token });
+            return Ok(new AuthSuccessResponse { Token = authenticationResult.Token, RefreshToken = authenticationResult.RefreshToken });
         }
     }
 }

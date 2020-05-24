@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.IdentityModel.Tokens.Jwt;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Tweetbook.Data;
 using Tweetbook.Domain;
 using Tweetbook.Options;
 
@@ -13,13 +15,19 @@ namespace Tweetbook.Services
 {
     public class IdentityService : IIdentityService
     {
+        private const string userIdClaimType = "userId";
+
+        private readonly DataContext dataContext;
         private readonly UserManager<IdentityUser> userManager;
         private readonly JwtSettings jwtSettings;
+        private readonly TokenValidationParameters tokenValidationParameters;
 
-        public IdentityService(UserManager<IdentityUser> userManager, JwtSettings jwtSettings)
+        public IdentityService(DataContext dataContext, UserManager<IdentityUser> userManager, JwtSettings jwtSettings, TokenValidationParameters tokenValidationParameters)
         {
+            this.dataContext = dataContext;
             this.userManager = userManager;
             this.jwtSettings = jwtSettings;
+            this.tokenValidationParameters = tokenValidationParameters;
         }
 
         public async Task<AuthenticationResult> RegisterAsync(string email, string password)
@@ -40,12 +48,74 @@ namespace Tweetbook.Services
 
             var result = await userManager.CreateAsync(newUser, password);
 
-            return new AuthenticationResult
+            if (!result.Succeeded)
             {
-                Success = result.Succeeded,
-                Token = result.Succeeded ? this.CreateToken(newUser) : null,
-                Errors = result.Succeeded ? null : result.Errors.Select(x => x.Description)
-            };
+                return new AuthenticationResult
+                {
+                    Success = false,
+                    Errors = result.Errors.Select(error => error.Description)
+                };
+            }
+
+            return await this.GenerateAuthenticationResultForUserAsync(newUser);
+        }
+
+        public async Task<AuthenticationResult> RefreshTokenAsync(string token, string refreshToken)
+        {
+            var validatedToken = this.GetClaimsPrincipalFromToken(token);
+
+            if (validatedToken == null)
+            {
+                return new AuthenticationResult { Errors = new[] { "Invalid token" } };
+            }
+
+            var expiryDateUnix = long.Parse(validatedToken.Claims.Single(claim => claim.Type == JwtRegisteredClaimNames.Exp).Value);
+
+            var expiryDateTimeUtc = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                .AddSeconds(expiryDateUnix);
+
+            if (expiryDateTimeUtc > DateTime.UtcNow)
+            {
+                return new AuthenticationResult { Errors = new[] { "This token hasn't expired yet" } };
+            }
+
+            var jti = validatedToken.Claims.Single(claim => claim.Type == JwtRegisteredClaimNames.Jti).Value;
+
+            var storedRefreshToken = await this.dataContext.RefreshTokens.SingleOrDefaultAsync(storedToken => storedToken.Token == refreshToken);
+
+            if (storedRefreshToken == null)
+            {
+                return new AuthenticationResult { Errors = new[] { "This refresh token does not exist" } };
+            }
+
+            if (DateTime.UtcNow > storedRefreshToken.ExpiryDate)
+            {
+                return new AuthenticationResult { Errors = new[] { "This refresh token has expired" } };
+            }
+
+            if (storedRefreshToken.Invalidated)
+            {
+                return new AuthenticationResult { Errors = new[] { "This refresh token has been invalidated" } };
+            }
+
+            if (storedRefreshToken.Used)
+            {
+                return new AuthenticationResult { Errors = new[] { "This refresh token has been used" } };
+            }
+
+            if (storedRefreshToken.JwtId != jti)
+            {
+                return new AuthenticationResult { Errors = new[] { "This refresh token does not match this JWT" } };
+            }
+
+            storedRefreshToken.Used = true;
+
+            this.dataContext.RefreshTokens.Update(storedRefreshToken);
+            await this.dataContext.SaveChangesAsync();
+
+            var user = await this.userManager.FindByIdAsync(validatedToken.Claims.SingleOrDefault(claim => claim.Type == userIdClaimType).Value);
+
+            return await this.GenerateAuthenticationResultForUserAsync(user);
         }
 
         public async Task<AuthenticationResult> LoginAsync(string email, string password)
@@ -59,14 +129,78 @@ namespace Tweetbook.Services
 
             var result = await userManager.CheckPasswordAsync(user, password);
 
+            if (!result)
+            {
+                return new AuthenticationResult
+                {
+                    Success = false,
+                    Errors = new[] { "Login failed" }
+                };
+            }
+
+            return await this.GenerateAuthenticationResultForUserAsync(user);
+        }
+
+        private ClaimsPrincipal GetClaimsPrincipalFromToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+
+            try
+            {
+                var principal = tokenHandler.ValidateToken(token, this.tokenValidationParameters, out var validatedToken);
+
+                if (!this.IsJwtWithValidSecurityAlgorithm(validatedToken))
+                {
+                    return null;
+                }
+
+                return principal;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private bool IsJwtWithValidSecurityAlgorithm(SecurityToken validatedToken)
+        {
+            return validatedToken is JwtSecurityToken jwtToken
+                && jwtToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        private async Task<AuthenticationResult> GenerateAuthenticationResultForUserAsync(IdentityUser user)
+        {
+            var jwtToken = this.CreateJwtToken(user);
+
+            var refreshToken = new RefreshToken
+            {
+                JwtId = jwtToken.Id,
+                UserId = user.Id,
+                CreationDate = DateTime.UtcNow,
+                ExpiryDate = DateTime.UtcNow.AddMonths(6)
+            };
+
+            this.dataContext.RefreshTokens.Add(refreshToken);
+            var numSaved = await this.dataContext.SaveChangesAsync();
+
+            if (numSaved == 0)
+            {
+                return new AuthenticationResult
+                {
+                    Success = false,
+                    Errors = new[] { "Failed to save refresh token to database" }
+                };
+            }
+
             return new AuthenticationResult
             {
-                Success = result,
-                Token = result ? this.CreateToken(user) : null
+                Success = true,
+                Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
+                RefreshToken = refreshToken.Token
             };
         }
 
-        private string CreateToken(IdentityUser newUser)
+        private SecurityToken CreateJwtToken(IdentityUser user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(this.jwtSettings.Secret);
@@ -74,17 +208,16 @@ namespace Tweetbook.Services
             {
                 Subject = new ClaimsIdentity(new[]
                 {
-                    new Claim(JwtRegisteredClaimNames.Sub, newUser.Email),
+                    new Claim(JwtRegisteredClaimNames.Sub, user.Email),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim(JwtRegisteredClaimNames.Email, newUser.Email),
-                    new Claim("id", newUser.Id)
+                    new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                    new Claim(userIdClaimType, user.Id)
                 }),
-                Expires = DateTime.UtcNow.AddHours(2),
+                Expires = DateTime.UtcNow.Add(this.jwtSettings.TokenLifetime),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
-            
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+
+            return tokenHandler.CreateToken(tokenDescriptor);
         }
     }
 }
