@@ -10,17 +10,37 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Tweetbook.Contract.V1;
+using Tweetbook.Controllers.V1;
 using Tweetbook.Controllers.V1.Requests;
 using Tweetbook.Controllers.V1.Responses;
 using Tweetbook.Data;
 
 namespace Tweetbook.IntegrationTests
 {
+    /// <summary>
+    /// Integration tests for the <see cref="PostsController"/>
+    /// </summary>
+    /// <remarks>
+    /// The tests in this class make usage of the <see cref="WebApplicationFactory{TEntryPoint}"/> class, which has been around since ASP.NET Core 2.1. One useful thing about
+    /// this class is it allows you to simulate the environment that your ASP.NET Core app usually runs in, and allows for substitution of resource heavy services, such as
+    /// database services. As such, the example tests below have been set up to communicate with an in-memory database instead of an actual database. While this solution is
+    /// not appropriate for all situations due to behavioural/performance differences when compared to real databases, it can be used to speed up the execution of tests
+    /// and to quickly implement integration tests without the need for database setup/teardown logic.
+    /// </remarks>
     [TestFixture]
     public class PostsControllerTests
     {
         private HttpClient client;
 
+        /// <summary>
+        /// Runs required setup before every test
+        /// </summary>
+        /// <remarks>
+        /// As mentioned in the class comments, we use <see cref="WebApplicationFactory{TEntryPoint}"/> to substitute usage of a real database with an in-memory one.
+        /// Since NUnit is used as a testing framework here, the <see cref="HttpClient"/> has been created anew for for each test method as an easy solution to isolate
+        /// database changes from each other. To achieve the same simplicity, consider using a testing framework such as XUnit which creates a new instance of the test
+        /// class for each method by default.
+        /// </remarks>
         [SetUp]
         public void Setup()
         {
@@ -34,7 +54,7 @@ namespace Tweetbook.IntegrationTests
                     });
                 });
 
-            client = appFactory.CreateClient();
+            this.client = appFactory.CreateClient();
         }
 
         [TearDown]
