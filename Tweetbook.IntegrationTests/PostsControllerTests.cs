@@ -31,6 +31,7 @@ namespace Tweetbook.IntegrationTests
     public class PostsControllerTests
     {
         private HttpClient client;
+        private IServiceProvider serviceProvider;
 
         /// <summary>
         /// Runs required setup before every test
@@ -54,13 +55,18 @@ namespace Tweetbook.IntegrationTests
                     });
                 });
 
+            this.serviceProvider = appFactory.Services;
             this.client = appFactory.CreateClient();
         }
 
         [TearDown]
         public void TearDown()
         {
-            this.client.Dispose();
+            using var serviceScope = this.serviceProvider.CreateScope();
+            {
+                var context = serviceScope.ServiceProvider.GetService<DataContext>();
+                context.Database.EnsureDeleted();
+            }
         }
 
         [Test]

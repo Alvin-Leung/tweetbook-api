@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using Swashbuckle.AspNetCore.Swagger;
+using Microsoft.OpenApi.Models;
 using System.Collections.Generic;
 using System.Text;
 using Tweetbook.Options;
@@ -15,7 +15,10 @@ namespace Tweetbook.Installers
     {
         public void InstallServices(IServiceCollection services, IConfiguration configuration)
         {
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+            services.AddMvc(options =>
+            {
+                options.EnableEndpointRouting = false;
+            }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             this.InstallAuthentication(services, configuration);
             this.InstallSwagger(services);
@@ -63,36 +66,42 @@ namespace Tweetbook.Installers
             // Register the Swagger Generator as a service. We can define 1 or more Swagger documents here
             services.AddSwaggerGen(x =>
             {
-                x.SwaggerDoc("v1", new Swashbuckle.AspNetCore.Swagger.Info
+                x.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
                 {
                     Title = "Tweetbook API",
                     Version = "v1",
                     Description = "Test documentation for the Tweetbook API",
-                    TermsOfService = "https://example.com/terms",
-                    Contact = new Swashbuckle.AspNetCore.Swagger.Contact
+                    TermsOfService = new System.Uri("https://example.com/terms"),
+                    Contact = new Microsoft.OpenApi.Models.OpenApiContact
                     {
                         Name = "Alvin Leung",
                         Email = string.Empty,
-                        Url = "https://gooddevbaddev.com",
+                        Url = new System.Uri("https://gooddevbaddev.com"),
                     },
-                    License = new Swashbuckle.AspNetCore.Swagger.License
+                    License = new Microsoft.OpenApi.Models.OpenApiLicense
                     {
                         Name = "Use under LICX",
-                        Url = "https://example.com/license",
+                        Url = new System.Uri("https://example.com/license"),
                     }
                 });
 
-                var security = new Dictionary<string, IEnumerable<string>>
+                var reference = new OpenApiReference
                 {
-                    {"Bearer", new string[0]}
+                    Id = "Bearer",
+                    Type = ReferenceType.SecurityScheme
                 };
 
-                x.AddSecurityDefinition("Bearer", new ApiKeyScheme
+                var security = new OpenApiSecurityRequirement
+                {
+                    { new OpenApiSecurityScheme { Reference = reference }, new List<string>() }
+                };
+
+                x.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Description = "JWT Authorization header using the bearer scheme",
                     Name = "Authorization",
-                    In = "header",
-                    Type = "apiKey"
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey
                 });
 
                 x.AddSecurityRequirement(security);
