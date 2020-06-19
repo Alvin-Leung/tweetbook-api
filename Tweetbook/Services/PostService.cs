@@ -7,7 +7,7 @@ using Tweetbook.Domain;
 
 namespace Tweetbook.Services
 {
-    public class PostService : IDataService<Post>
+    public class PostService : IPostService
     {
         private readonly DataContext dataContext;
 
@@ -46,7 +46,7 @@ namespace Tweetbook.Services
         {
             var postToDelete = await this.GetByIdAsync(postId);
 
-            if (postToDelete == default)
+            if (postToDelete == null)
             {
                 return false;
             }
@@ -55,6 +55,18 @@ namespace Tweetbook.Services
             var numDeleted = await this.dataContext.SaveChangesAsync();
 
             return numDeleted > 0;
+        }
+
+        public async Task<bool> UserOwnsPost(string userId, Guid postId)
+        {
+            var foundPost = await this.dataContext.Posts.AsNoTracking().SingleOrDefaultAsync(post => post.Id == postId);
+
+            if (foundPost == null)
+            {
+                return false;
+            }
+
+            return foundPost.UserId == userId;
         }
     }
 }

@@ -15,7 +15,7 @@ namespace Tweetbook.Services
 {
     public class IdentityService : IIdentityService
     {
-        private const string userIdClaimType = "userId";
+        public const string UserIdClaimType = "userId";
 
         private readonly DataContext dataContext;
         private readonly UserManager<IdentityUser> userManager;
@@ -113,7 +113,7 @@ namespace Tweetbook.Services
             this.dataContext.RefreshTokens.Update(storedRefreshToken);
             await this.dataContext.SaveChangesAsync();
 
-            var user = await this.userManager.FindByIdAsync(validatedToken.Claims.SingleOrDefault(claim => claim.Type == userIdClaimType).Value);
+            var user = await this.userManager.FindByIdAsync(validatedToken.Claims.SingleOrDefault(claim => claim.Type == UserIdClaimType).Value);
 
             return await this.GenerateAuthenticationResultForUserAsync(user);
         }
@@ -211,7 +211,7 @@ namespace Tweetbook.Services
                     new Claim(JwtRegisteredClaimNames.Sub, user.Email),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                    new Claim(userIdClaimType, user.Id)
+                    new Claim(UserIdClaimType, user.Id)
                 }),
                 Expires = DateTime.UtcNow.Add(this.jwtSettings.TokenLifetime),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)

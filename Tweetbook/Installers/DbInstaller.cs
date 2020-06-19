@@ -17,7 +17,9 @@ namespace Tweetbook.Installers
             services.AddDefaultIdentity<IdentityUser>()
                 .AddEntityFrameworkStores<Data.DataContext>();
 
-            services.AddScoped<IDataService<Post>, PostService>();
+            services.AddScoped<PostService>();
+            services.AddScoped<IDataService<Post>>(x => x.GetService<PostService>());
+            services.AddScoped<IPostService>(x => x.GetService<PostService>());
         }
     }
 }
