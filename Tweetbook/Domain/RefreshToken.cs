@@ -23,7 +23,7 @@ namespace Tweetbook.Domain
 
         public string UserId { get; set; }
 
-        [ForeignKey(nameof(UserId))] // this is how foreign keys are specified in entity framework. The UserId property will be used to hold the unique id of the identity user
+        [ForeignKey(nameof(UserId))]
         public IdentityUser User { get; set; }
     }
 }
