@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Tweetbook.Data;
 using Tweetbook.Domain;
@@ -18,16 +19,21 @@ namespace Tweetbook.Services
 
         public async Task<IEnumerable<Post>> GetAllAsync()
         {
-            return await this.dataContext.Posts.ToListAsync();
+            return await this.dataContext.Posts.Include(post => post.Tags).ToListAsync();
         }
 
         public async Task<Post> GetByIdAsync(Guid Id)
         {
-            return await this.dataContext.Posts.SingleOrDefaultAsync(post => post.Id == Id);
+            return await this.dataContext.Posts
+                .Include(post => post.Tags)
+                .SingleOrDefaultAsync(post => post.Id == Id);
         }
 
         public async Task<bool> CreateAsync(Post post)
         {
+            post.Tags?.ForEach(postTag => postTag.TagName = postTag.TagName.ToLower());
+
+            await this.AddNewTagsAsync(post);
             this.dataContext.Posts.Add(post);
             var numCreated = await this.dataContext.SaveChangesAsync();
 
@@ -36,6 +42,9 @@ namespace Tweetbook.Services
 
         public async Task<bool> UpdateAsync(Post updatedPost)
         {
+            updatedPost.Tags?.ForEach(x => x.TagName = x.TagName.ToLower());
+
+            await this.AddNewTagsAsync(updatedPost);
             this.dataContext.Posts.Update(updatedPost);
             var numUpdated = await this.dataContext.SaveChangesAsync();
 
@@ -57,7 +66,7 @@ namespace Tweetbook.Services
             return numDeleted > 0;
         }
 
-        public async Task<bool> UserOwnsPost(string userId, Guid postId)
+        public async Task<bool> UserOwnsPostAsync(string userId, Guid postId)
         {
             var foundPost = await this.dataContext.Posts.AsNoTracking().SingleOrDefaultAsync(post => post.Id == postId);
 
@@ -67,6 +76,31 @@ namespace Tweetbook.Services
             }
 
             return foundPost.UserId == userId;
+        }
+
+        public async Task<List<Tag>> GetAllTagsAsync()
+        {
+            return await this.dataContext.Tags.AsNoTracking().ToListAsync();
+        }
+
+        private async Task AddNewTagsAsync(Post post)
+        {
+            foreach (var newTag in post.Tags)
+            {
+                var matchingTag = await this.dataContext.Tags.SingleOrDefaultAsync(existingTag => existingTag.Name == newTag.TagName);
+
+                if (matchingTag != null)
+                {
+                    continue;
+                }
+
+                this.dataContext.Tags.Add(new Tag 
+                { 
+                    Name = newTag.TagName,
+                    CreatorId = post.UserId,
+                    CreatedOn = DateTime.UtcNow
+                });
+            }
         }
     }
 }

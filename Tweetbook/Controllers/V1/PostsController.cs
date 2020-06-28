@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Tweetbook.Contract.V1;
 using Tweetbook.Controllers.V1.Requests;
@@ -25,7 +26,14 @@ namespace Tweetbook.Controllers.V1
         [HttpGet(ApiRoutes.Posts.GetAll)]
         public async Task<IActionResult> GetAll()
         {
-            return Ok(await this.postService.GetAllAsync());
+            var posts = await this.postService.GetAllAsync();
+
+            return Ok(posts.Select(post => new PostResponse
+            {
+                Id = post.Id,
+                Name = post.Name,
+                Tags = post.Tags.Select(postTag => postTag.TagName)
+            }));
         }
 
         [HttpGet(ApiRoutes.Posts.Get)]
@@ -38,13 +46,18 @@ namespace Tweetbook.Controllers.V1
                 return NotFound();
             }
 
-            return Ok(foundPost);
+            return Ok(new PostResponse
+            {
+                Id = foundPost.Id,
+                Name = foundPost.Name,
+                Tags = foundPost.Tags.Select(postTag => postTag.TagName)
+            });
         }
 
         [HttpPut(ApiRoutes.Posts.Update)]
         public async Task<IActionResult> Update([FromRoute]Guid postId, [FromBody]UpdatePostRequest postRequest)
         {
-            var userOwnsPost = await this.postService.UserOwnsPost(HttpContext.GetUserId(), postId);
+            var userOwnsPost = await this.postService.UserOwnsPostAsync(HttpContext.GetUserId(), postId);
 
             if (!userOwnsPost)
             {
@@ -53,19 +66,19 @@ namespace Tweetbook.Controllers.V1
 
             var post = await this.postService.GetByIdAsync(postId);
             post.Name = postRequest.Name;
+            post.Tags = postRequest.Tags.Select(tagName => new PostTag { TagName = tagName, PostId = post.Id }).ToList();
 
             if (!await this.postService.UpdateAsync(post))
             {
                 return NotFound();
             }
 
-            var postResponse = new PostResponse
+            return Ok(new PostResponse
             {
                 Id = post.Id,
-                Name = post.Name
-            };
-
-            return Ok(postResponse);
+                Name = post.Name,
+                Tags = post.Tags.Select(postTag => postTag.TagName)
+            });
         }
 
         [HttpPost(ApiRoutes.Posts.Create)]
@@ -74,10 +87,13 @@ namespace Tweetbook.Controllers.V1
             // Make sure to map the request to your domain object! This is why we created an additional CreatePostRequest class
             // What we expose to the client is a (versioned) contract/interface. Never mix up your contracts with domain objects,
             // as you may want to change the contract, but keep the domain objects the same in the future.
+            var newPostId = Guid.NewGuid();
             var post = new Post
             {
+                Id = newPostId,
                 Name = postRequest.Name,
-                UserId = HttpContext.GetUserId()
+                UserId = HttpContext.GetUserId(),
+                Tags = postRequest.Tags.Select(tagName => new PostTag { TagName = tagName, PostId = newPostId }).ToList()
             };
 
             await this.postService.CreateAsync(post);
@@ -90,7 +106,8 @@ namespace Tweetbook.Controllers.V1
             var response = new PostResponse
             {
                 Id = post.Id,
-                Name = post.Name
+                Name = post.Name,
+                Tags = post.Tags.Select(postTag => postTag.TagName)
             };
 
             return Created(locationUri, response);
@@ -99,7 +116,7 @@ namespace Tweetbook.Controllers.V1
         [HttpDelete(ApiRoutes.Posts.Delete)]
         public async Task<IActionResult> Delete([FromRoute]Guid postId)
         {
-            var userOwnsPost = await this.postService.UserOwnsPost(HttpContext.GetUserId(), postId);
+            var userOwnsPost = await this.postService.UserOwnsPostAsync(HttpContext.GetUserId(), postId);
 
             if (!userOwnsPost)
             {

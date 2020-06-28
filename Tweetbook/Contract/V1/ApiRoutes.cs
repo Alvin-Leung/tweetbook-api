@@ -21,6 +21,11 @@
             public const string Delete = Base + "/posts/{postId}";
         }
 
+        public static class Tags
+        {
+            public const string GetAll = Base + "/tags";
+        }
+
         public static class Identity
         {
             // note: we are using verbs here, which is not standard for RESTful apis. Doing so for simplicity; we would usually not include these routes in the RESTful api
