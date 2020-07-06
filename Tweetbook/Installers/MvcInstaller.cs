@@ -20,11 +20,11 @@ namespace Tweetbook.Installers
                 options.EnableEndpointRouting = false;
             }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
-            this.InstallAuthentication(services, configuration);
+            this.InstallSecurity(services, configuration);
             this.InstallSwagger(services);
         }
 
-        private void InstallAuthentication(IServiceCollection services, IConfiguration configuration)
+        private void InstallSecurity(IServiceCollection services, IConfiguration configuration)
         {
             var jwtSettings = new JwtSettings();
             configuration.GetSection(nameof(JwtSettings)).Bind(jwtSettings);
@@ -45,6 +45,11 @@ namespace Tweetbook.Installers
             {
                 jwtBearerOptions.SaveToken = true;
                 jwtBearerOptions.TokenValidationParameters = tokenValidationParameters;
+            });
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy(Policies.TagsPolicyName, builder => builder.RequireClaim(Policies.CustomClaims.TagsView, "true"));
             });
         }
 

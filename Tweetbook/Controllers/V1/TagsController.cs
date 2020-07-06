@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;
 using Tweetbook.Contract.V1;
@@ -17,6 +18,7 @@ namespace Tweetbook.Controllers.V1
         }
 
         [HttpGet(ApiRoutes.Tags.GetAll)]
+        [Authorize(Policy = Policies.TagsPolicyName)]
         public async Task<IActionResult> GetAll()
         {
             var tags = await this.postService.GetAllTagsAsync();
