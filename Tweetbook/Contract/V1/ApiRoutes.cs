@@ -8,15 +8,23 @@
 
         public const string Base = Root + "/" + Version;
 
+        /// <summary>
+        /// Constants for <see cref="Tweetbook.Domain.Post"/> related routes
+        /// </summary>
+        /// <remarks>
+        /// Conventions:
+        /// - Use nouns for endpoint names
+        /// - The <see cref="Create"/> endpoint is usually named the same as the <see cref="GetAll"/> endpoint
+        /// </remarks>
         public static class Posts
         {
-            public const string GetAll = Base + "/posts"; // note: use nouns for endpoint names
+            public const string GetAll = Base + "/posts";
 
             public const string Get = Base + "/posts/{postId}";
 
             public const string Update = Base + "/posts/{postId}";
 
-            public const string Create = Base + "/posts"; // note: the standard for creation is to name the Create endpoint the same as the GetAll endpoint
+            public const string Create = Base + "/posts";
 
             public const string Delete = Base + "/posts/{postId}";
         }
@@ -26,9 +34,17 @@
             public const string GetAll = Base + "/tags";
         }
 
+        /// <summary>
+        /// Constants for Identity-related routes
+        /// </summary>
+        /// <remarks>
+        /// Note the routes below use verbs instead of nouns, which is non-standard for RESTful APIs. We would 
+        /// typically define identity related routes on a separate identity server, with the API hosted on this server
+        /// not necessarily needing to be RESTful. However, to demo both RESTful API and identity functionality in 
+        /// one project, the identity routes have been defined below.
+        /// </remarks>
         public static class Identity
         {
-            // note: we are using verbs here, which is not standard for RESTful apis. Doing so for simplicity; we would usually not include these routes in the RESTful api
             public const string Login = Base + "/identity/login";
 
             public const string Register = Base + "/identity/register";

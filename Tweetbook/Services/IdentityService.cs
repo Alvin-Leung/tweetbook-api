@@ -59,7 +59,7 @@ namespace Tweetbook.Services
                 };
             }
 
-            await this.userManager.AddClaimAsync(newUser, new Claim(Policies.CustomClaims.TagsView, "true"));
+            await this.userManager.AddClaimAsync(newUser, new Claim(Policies.ClaimTypes.TagsView, "true"));
 
             return await this.GenerateAuthenticationResultForUserAsync(newUser);
         }

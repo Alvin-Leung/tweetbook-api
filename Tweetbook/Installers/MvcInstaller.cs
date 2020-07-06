@@ -49,7 +49,7 @@ namespace Tweetbook.Installers
 
             services.AddAuthorization(options =>
             {
-                options.AddPolicy(Policies.TagsPolicyName, builder => builder.RequireClaim(Policies.CustomClaims.TagsView, "true"));
+                options.AddPolicy(Policies.TagsPolicyName, builder => builder.RequireClaim(Policies.ClaimTypes.TagsView, "true"));
             });
         }
 
