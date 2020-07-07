@@ -7,7 +7,7 @@ using Tweetbook.Domain;
 
 namespace Tweetbook.Services
 {
-    public class TagService : IDataService<Tag, string> // 8. Of course, we actually need to create our TagService.
+    public class TagService : IDataService<Tag, string>
     {
         private readonly DataContext dataContext;
 
@@ -18,7 +18,7 @@ namespace Tweetbook.Services
 
         public async Task<IEnumerable<Tag>> GetAllAsync()
         {
-            return await this.dataContext.Tags.AsNoTracking().ToListAsync(); // 9. This logic was previously in the PostService, so we've just it migrated here.
+            return await this.dataContext.Tags.AsNoTracking().ToListAsync();
         }
 
         public async Task<bool> DeleteAsync(string tagName)

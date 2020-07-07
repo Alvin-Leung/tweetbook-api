@@ -10,7 +10,6 @@ using Tweetbook.Services;
 
 namespace Tweetbook.Controllers.V1
 {
-    // 8. Allow users with either Admin and/or Poster roles to access the tag controller routes
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme, Roles = Policies.Roles.Admin + "," + Policies.Roles.Poster)] 
     public class TagsController : Controller
     {

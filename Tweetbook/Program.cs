@@ -23,7 +23,7 @@ namespace Tweetbook
 
                 var roleManager = serviceScope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-                if (!await roleManager.RoleExistsAsync(Policies.Roles.Admin)) // 4. Create Admin and Poster roles if these roles do not exist yet
+                if (!await roleManager.RoleExistsAsync(Policies.Roles.Admin))
                 {
                     var adminRole = new IdentityRole(Policies.Roles.Admin);
                     await roleManager.CreateAsync(adminRole);

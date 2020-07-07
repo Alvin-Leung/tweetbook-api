@@ -27,7 +27,7 @@ namespace Tweetbook.Services
         public IdentityService(
             DataContext dataContext,
             UserManager<IdentityUser> userManager,
-            RoleManager<IdentityRole> roleManager, // 5. Inject role manager
+            RoleManager<IdentityRole> roleManager,
             JwtSettings jwtSettings,
             TokenValidationParameters tokenValidationParameters)
         {
@@ -66,7 +66,6 @@ namespace Tweetbook.Services
                 };
             }
 
-            // 6. Assign all registrants the Poster role (For simplicity of the demo, Admin users can be created by direct database modification)
             await this.userManager.AddToRoleAsync(newUser, Policies.Roles.Poster); 
 
             return await this.GenerateAuthenticationResultForUserAsync(newUser);
@@ -227,7 +226,7 @@ namespace Tweetbook.Services
             var userClaims = await this.userManager.GetClaimsAsync(user);
             claims.AddRange(userClaims);
 
-            var userRoleClaims = await GetUserRoleClaimsAsync(user, claims); // 7. Get claims associated with all roles that a user falls into, and add to JWT claims
+            var userRoleClaims = await GetUserRoleClaimsAsync(user, claims);
             claims.AddRange(userRoleClaims);
 
             var tokenDescriptor = new SecurityTokenDescriptor
