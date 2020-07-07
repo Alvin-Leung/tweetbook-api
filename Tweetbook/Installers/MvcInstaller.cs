@@ -47,10 +47,7 @@ namespace Tweetbook.Installers
                 jwtBearerOptions.TokenValidationParameters = tokenValidationParameters;
             });
 
-            services.AddAuthorization(options =>
-            {
-                options.AddPolicy(Policies.TagsPolicyName, builder => builder.RequireClaim(Policies.ClaimTypes.TagsView, "true"));
-            });
+            services.AddAuthorization(); // 1. We don't need claims based authorization anymore for a demo of restricting endpoint with roles, so we've removed the logic
         }
 
         private TokenValidationParameters GetTokenValidationParameters(JwtSettings jwtSettings)

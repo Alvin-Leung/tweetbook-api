@@ -4,16 +4,16 @@ using System.Threading.Tasks;
 
 namespace Tweetbook.Services
 {
-    public interface IDataService<T>
+    public interface IDataService<TItem, TKey>
     {
-        Task<IEnumerable<T>> GetAllAsync();
+        Task<IEnumerable<TItem>> GetAllAsync();
 
-        Task<T> GetByIdAsync(Guid Id);
+        Task<TItem> GetAsync(TKey key);
 
-        Task<bool> CreateAsync(T item);
+        Task<bool> CreateAsync(TItem item);
 
-        Task<bool> UpdateAsync(T item);
+        Task<bool> UpdateAsync(TItem item);
 
-        Task<bool> DeleteAsync(Guid Id);
+        Task<bool> DeleteAsync(TKey key);
     }
 }

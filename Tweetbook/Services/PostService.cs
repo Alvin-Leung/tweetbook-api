@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Tweetbook.Data;
 using Tweetbook.Domain;
@@ -22,7 +21,7 @@ namespace Tweetbook.Services
             return await this.dataContext.Posts.Include(post => post.Tags).ToListAsync();
         }
 
-        public async Task<Post> GetByIdAsync(Guid Id)
+        public async Task<Post> GetAsync(Guid Id)
         {
             return await this.dataContext.Posts
                 .Include(post => post.Tags)
@@ -53,7 +52,7 @@ namespace Tweetbook.Services
 
         public async Task<bool> DeleteAsync(Guid postId)
         {
-            var postToDelete = await this.GetByIdAsync(postId);
+            var postToDelete = await this.GetAsync(postId);
 
             if (postToDelete == null)
             {
@@ -76,11 +75,6 @@ namespace Tweetbook.Services
             }
 
             return foundPost.UserId == userId;
-        }
-
-        public async Task<List<Tag>> GetAllTagsAsync()
-        {
-            return await this.dataContext.Tags.AsNoTracking().ToListAsync();
         }
 
         private async Task AddNewTagsAsync(Post post)

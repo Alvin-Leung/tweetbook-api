@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using Tweetbook.Domain;
 using Tweetbook.Services;
 
@@ -15,11 +16,14 @@ namespace Tweetbook.Installers
                 options.UseSqlServer(
                     configuration.GetConnectionString("DefaultConnection")));
             services.AddDefaultIdentity<IdentityUser>()
+                .AddRoles<IdentityRole>() // 2. Add role related services
                 .AddEntityFrameworkStores<Data.DataContext>();
 
             services.AddScoped<PostService>();
-            services.AddScoped<IDataService<Post>>(x => x.GetService<PostService>());
-            services.AddScoped<IPostService>(x => x.GetService<PostService>());
+            services.AddScoped<IDataService<Post, Guid>>(serviceProvider => serviceProvider.GetService<PostService>());
+            services.AddScoped<IPostService>(serviceProvider => serviceProvider.GetService<PostService>());
+
+            services.AddScoped<IDataService<Tag, string>, TagService>(); // 3. Add a scoped tag service
         }
     }
 }

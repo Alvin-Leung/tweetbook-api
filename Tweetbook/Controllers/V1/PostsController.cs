@@ -39,7 +39,7 @@ namespace Tweetbook.Controllers.V1
         [HttpGet(ApiRoutes.Posts.Get)]
         public async Task<IActionResult> Get([FromRoute]Guid postId)
         {
-            var foundPost = await this.postService.GetByIdAsync(postId);
+            var foundPost = await this.postService.GetAsync(postId);
             
             if (foundPost == null)
             {
@@ -64,7 +64,7 @@ namespace Tweetbook.Controllers.V1
                 return BadRequest(new { error = "You do not own this post" });
             }
 
-            var post = await this.postService.GetByIdAsync(postId);
+            var post = await this.postService.GetAsync(postId);
             post.Name = postRequest.Name;
             post.Tags = postRequest.Tags.Select(tagName => new PostTag { TagName = tagName, PostId = post.Id }).ToList();
 

@@ -20,13 +20,20 @@ namespace Tweetbook.Services
 
         private readonly DataContext dataContext;
         private readonly UserManager<IdentityUser> userManager;
+        private readonly RoleManager<IdentityRole> roleManager;
         private readonly JwtSettings jwtSettings;
         private readonly TokenValidationParameters tokenValidationParameters;
 
-        public IdentityService(DataContext dataContext, UserManager<IdentityUser> userManager, JwtSettings jwtSettings, TokenValidationParameters tokenValidationParameters)
+        public IdentityService(
+            DataContext dataContext,
+            UserManager<IdentityUser> userManager,
+            RoleManager<IdentityRole> roleManager, // 5. Inject role manager
+            JwtSettings jwtSettings,
+            TokenValidationParameters tokenValidationParameters)
         {
             this.dataContext = dataContext;
             this.userManager = userManager;
+            this.roleManager = roleManager;
             this.jwtSettings = jwtSettings;
             this.tokenValidationParameters = tokenValidationParameters;
         }
@@ -59,7 +66,8 @@ namespace Tweetbook.Services
                 };
             }
 
-            await this.userManager.AddClaimAsync(newUser, new Claim(Policies.ClaimTypes.TagsView, "true"));
+            // 6. Assign all registrants the Poster role (For simplicity of the demo, Admin users can be created by direct database modification)
+            await this.userManager.AddToRoleAsync(newUser, Policies.Roles.Poster); 
 
             return await this.GenerateAuthenticationResultForUserAsync(newUser);
         }
@@ -219,14 +227,48 @@ namespace Tweetbook.Services
             var userClaims = await this.userManager.GetClaimsAsync(user);
             claims.AddRange(userClaims);
 
+            var userRoleClaims = await GetUserRoleClaimsAsync(user, claims); // 7. Get claims associated with all roles that a user falls into, and add to JWT claims
+            claims.AddRange(userRoleClaims);
+
             var tokenDescriptor = new SecurityTokenDescriptor
-                {
+            {
                 Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.Add(jwtSettings.TokenLifetime),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
             return tokenHandler.CreateToken(tokenDescriptor);
+        }
+
+        private async Task<List<Claim>> GetUserRoleClaimsAsync(IdentityUser user, List<Claim> existingClaims)
+        {
+            var userRoleClaims = new List<Claim>();
+            var userRoles = await this.userManager.GetRolesAsync(user);
+
+            foreach (var userRole in userRoles)
+            {
+                userRoleClaims.Add(new Claim(ClaimTypes.Role, userRole));
+                var role = await this.roleManager.FindByNameAsync(userRole);
+
+                if (role == null)
+                {
+                    continue;
+                }
+
+                var roleClaims = await this.roleManager.GetClaimsAsync(role);
+
+                foreach (var roleClaim in roleClaims)
+                {
+                    if (existingClaims.Contains(roleClaim) || userRoleClaims.Contains(roleClaim))
+                    {
+                        continue;
+                    }
+
+                    userRoleClaims.Add(roleClaim);
+                }
+            }
+
+            return userRoleClaims;
         }
     }
 }
