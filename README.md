@@ -22,6 +22,10 @@ ASP.NET Core has dependency injection baked right into the framework, and we mak
 - Improved testability of code
 - Increased code re-useabilty
 
+### Restricting Endpoints With Roles
+
+A role is a business level representation of a user (ex. super-admin, admin, guest, etc.). We may want to restrict access to parts of the system based on a user's role(s). This can easily be done by using [Role-based authorization in ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core/security/authorization/roles?view=aspnetcore-3.1). Example implementation of Admin and Poster roles in this repo's code can be found [here](https://github.com/Alvin-Leung/tweetbook-api/commit/4e049ee832cb3748acedc99945bfaf45388d6485#diff-26c530be62ea70099e988af9ad13e95dR50).
+
 ## Upcoming Topics
 
 - Versioned Endpoints, Requests, and Responses
